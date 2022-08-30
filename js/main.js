@@ -1,6 +1,6 @@
 'use strict';
 
-document.addEventListener('DOMContentLoaded', init1);
+// document.addEventListener('DOMContentLoaded', init1);
 
 function init1() {
   const canvas1 = document.getElementById('canvas1');
@@ -39,8 +39,8 @@ function init1() {
 
 const dpr = window.devicePixelRatio;
 const CANVAS_SIZE = {
-  width: 600,//window.innerWidth,
-  height: 400//window.innerHeight
+  width: 800, //window.innerWidth,
+  height: 600 //window.innerHeight
 }
 const IMG_URL_LIST = [
   'img/dog_akitainu.png',
@@ -70,7 +70,6 @@ class Animal {
     this.scale = scale;
     this.velocity = velocity;
     this.isOver = false;
-
   }
 
   /**
@@ -95,29 +94,66 @@ class Animal {
   }
 }
 
-// document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', init);
+
 
 async function init() {
   const canvas = document.getElementById('canvas');
   if (!canvas) return;
-  canvas.width = CANVAS_SIZE.width;
-  canvas.height = CANVAS_SIZE.height;
-  canvas.style.width = CANVAS_SIZE.width;
-  canvas.style.height = CANVAS_SIZE.height;
-  const ctx = canvas.getContext('2d');
 
-  try {
-    const images = await allLoadImgPromise(IMG_URL_LIST);
-    document.addEventListener('keyup', e => {
-      console.log('keyup :>> ', e);
-      exe(images, ctx);
+  const stage = new createjs.Stage('canvas');
+  createjs.Ticker.timingMode = createjs.Ticker.RAF;
+
+  // プリロード
+  const images = await allLoadImgPromise(IMG_URL_LIST);
+
+  window.addEventListener("resize", (event) => handleResize(event, stage));
+  handleResize(null, stage);
+
+  document.addEventListener('keyup', e => {
+    console.log('keyup :>> ', e);
+
+    const pickedImage = images[random(0, images.length - 1)];
+    const bmp = new createjs.Bitmap(pickedImage);
+    const scale = random(0.3, 0.8, 1);
+
+    stage.addChild(bmp);
+    bmp.regX = pickedImage.width / 2;
+    bmp.regY = pickedImage.height / 2;
+    bmp.scale = scale;
+    console.log('pickedImage.width :>> ', pickedImage.width);
+    bmp.x = random(
+      pickedImage.width * scale / 2,
+      (stage.canvas.width / dpr) - (pickedImage.width * scale / 2)
+    );
+    bmp.y = (stage.canvas.height / dpr) - pickedImage.height * scale / 2 / 1.1;
+
+    imgsOnCanvas.push(bmp);
+    createjs.Tween.get(bmp)
+      .to({alpha: 0.7}, 0)
+      .to({
+        scale: scale * 1.2,
+        alpha: 1,
+      }, 150)
+      .to({scale: scale}, 200);
+  });
+
+  createjs.Ticker.on('tick', () => {
+    imgsOnCanvas.forEach(item => {
+      item.y -= 1;
     });
-  
-
-  } catch (error) {
-    console.error(error.message);
-  }
+    stage.update();
+  });
 }
+
+// リサイズ処理
+function handleResize(event, stage) {
+  stage.canvas.width = window.innerWidth * dpr;
+  stage.canvas.height = window.innerHeight * dpr;
+  stage.scaleX = stage.scaleY = dpr;
+  stage.update();
+}
+
 
 /**
  * 
@@ -137,7 +173,7 @@ function random(min, max, decimalPlaces = 0) {
   return result / decimalPlacesNum;
 }
 
-function exe(images, ctx) {
+function exe(images, stage) {
   const pickedImage = images[random(0, images.length - 1)];
   const scale = random(0.3, 0.8, 1);
   console.log('scale :>> ', scale);
