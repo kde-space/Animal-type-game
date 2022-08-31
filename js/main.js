@@ -1,42 +1,5 @@
 'use strict';
 
-// document.addEventListener('DOMContentLoaded', init1);
-
-function init1() {
-  const canvas1 = document.getElementById('canvas1');
-  canvas1.width = 800;
-  canvas1.height = 600;
-
-  const stage = new createjs.Stage('canvas1');
-  const object = new createjs.Shape();
-  object.graphics.beginFill('DarkRed');
-  object.graphics.beginStroke('Blue');
-  object.graphics.setStrokeStyle(10);
-  object.graphics.drawCircle(100, 100, 100);
-  // object.x = 100;
-  // object.y = 100;
-  // object.scaleY = 0.5;
-
-  var poly = new createjs.Shape();
-  poly.graphics.beginFill("DarkRed"); // 赤色で描画するように設定
-  poly.graphics.drawPolyStar(300, 300, 75, 10, 0.3, -90);
-
-  var obj = new createjs.Shape();
-  obj.graphics.beginFill("Green"); // 赤色で描画するように設定
-  obj.graphics.moveTo(200, 500); // (0,0)座標から描き始める
-  obj.graphics.lineTo(100, 0); // (100,0)座標まで辺を描く
-  obj.graphics.lineTo(0, 100); // (0,100)座標まで辺を描く
-  obj.graphics.lineTo(0, 0); // (0,0)座標まで辺を描く
-  stage.addChild(obj); // 表示リストに追加
-
-  stage.addChild(object);
-  stage.addChild(poly);
-  stage.update();
-}
-
-
-
-
 const dpr = window.devicePixelRatio;
 const CANVAS_SIZE = {
   width: 800, //window.innerWidth,
@@ -96,7 +59,6 @@ class Animal {
 
 document.addEventListener('DOMContentLoaded', init);
 
-
 async function init() {
   const canvas = document.getElementById('canvas');
   if (!canvas) return;
@@ -110,40 +72,41 @@ async function init() {
   window.addEventListener("resize", (event) => handleResize(event, stage));
   handleResize(null, stage);
 
-  document.addEventListener('keyup', e => {
-    console.log('keyup :>> ', e);
-
-    const pickedImage = images[random(0, images.length - 1)];
-    const bmp = new createjs.Bitmap(pickedImage);
-    const scale = random(0.3, 0.8, 1);
-
-    stage.addChild(bmp);
-    bmp.regX = pickedImage.width / 2;
-    bmp.regY = pickedImage.height / 2;
-    bmp.scale = scale;
-    console.log('pickedImage.width :>> ', pickedImage.width);
-    bmp.x = random(
-      pickedImage.width * scale / 2,
-      (stage.canvas.width / dpr) - (pickedImage.width * scale / 2)
-    );
-    bmp.y = (stage.canvas.height / dpr) - pickedImage.height * scale / 2 / 1.1;
-
-    imgsOnCanvas.push(bmp);
-    createjs.Tween.get(bmp)
-      .to({alpha: 0.7}, 0)
-      .to({
-        scale: scale * 1.2,
-        alpha: 1,
-      }, 150)
-      .to({scale: scale}, 200);
-  });
+  document.addEventListener('keyup', debounce((event) => handleKeyup(event, stage, images)), 200);
 
   createjs.Ticker.on('tick', () => {
     imgsOnCanvas.forEach(item => {
-      item.y -= 1;
+      item.y -= 1 * item.scale * 5;
     });
     stage.update();
   });
+}
+
+function handleKeyup(event, stage, images) {
+  const pickedImage = images[random(0, images.length - 1)];
+  const bmp = new createjs.Bitmap(pickedImage);
+  const scale = random(0.3, 0.8, 1);
+
+  stage.addChild(bmp);
+  bmp.regX = pickedImage.width / 2;
+  bmp.regY = pickedImage.height / 2;
+  bmp.scale = scale;
+  console.log('pickedImage.width :>> ', pickedImage.width);
+  bmp.x = random(
+    pickedImage.width * scale / 2,
+    (stage.canvas.width / dpr) - (pickedImage.width * scale / 2)
+  );
+  bmp.y = (stage.canvas.height / dpr) - pickedImage.height * scale / 2 / 1.1;
+
+  imgsOnCanvas.push(bmp);
+
+  createjs.Tween.get(bmp)
+    .to({alpha: 0.7}, 0)
+    .to({
+      scale: scale * 1.2,
+      alpha: 1,
+    }, 150)
+    .to({scale: scale}, 200);  
 }
 
 // リサイズ処理
@@ -154,12 +117,11 @@ function handleResize(event, stage) {
   stage.update();
 }
 
-
 /**
  * 
  * @param {Number} min 
  * @param {Number} max 
- * @param {Integer} n 
+ * @param {Integer} n
  * @returns {Number}
  */
 function random(min, max, decimalPlaces = 0) {
@@ -239,4 +201,12 @@ function loadImgPromise(url) {
     });
     img.src = url;
   });
+}
+
+function debounce(func, timeout = 300){
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
 }
