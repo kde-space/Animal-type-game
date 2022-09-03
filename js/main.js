@@ -1,25 +1,30 @@
 'use strict';
 
+createjs.Ticker.timingMode = createjs.Ticker.RAF;
 const dpr = window.devicePixelRatio;
 const CANVAS_SIZE = {
   width: 800, //window.innerWidth,
   height: 600 //window.innerHeight
 }
-const IMG_URL_LIST = [
-  'img/dog_akitainu.png',
-  'img/dog_doberman.png',
-  'img/dog_rottweiler.png',
-  'img/dog_kooikerhondje.png',
-  'img/shoes_32.png',
-  'img/animal_bear_higuma.png',
-  'img/animal_bear_panda.png',
-  'img/animal_kirin.png',
-  'img/animal_lion.png',
-  'img/animal_panda_back.png',
-  'img/animal_penguin.png',
-  'img/animal_uma.png',
-  'img/animal_usagi_gray.png',
-  'img/animal_zou.png',
+const IMG_NAME_LIST = [
+  'dog_akitainu.png',
+  'dog_doberman.png',
+  'dog_rottweiler.png',
+  'dog_kooikerhondje.png',
+  'shoes_32.png',
+  'animal_bear_higuma.png',
+  'animal_bear_panda.png',
+  'animal_kirin.png',
+  'animal_lion.png',
+  'animal_panda_back.png',
+  'animal_penguin.png',
+  'animal_uma.png',
+  'animal_usagi_gray.png',
+  'animal_zou.png',
+  'animal_hitsuji.png',
+  'animal_hyou_panther.png',
+  'animal_sai.png',
+  'pet_cat_sit.png',
 ];
 
 const imgsOnCanvas = [];
@@ -62,17 +67,17 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
   const canvas = document.getElementById('canvas');
   if (!canvas) return;
-
+  const audio = new Audio('assets/sound/sound.mp3');
   const stage = new createjs.Stage('canvas');
-  createjs.Ticker.timingMode = createjs.Ticker.RAF;
-
+  const btn = document.getElementById('mute');
   // プリロード
-  const images = await allLoadImgPromise(IMG_URL_LIST);
-
+  const images = await allLoadImgPromise(IMG_NAME_LIST);
   window.addEventListener("resize", (event) => handleResize(event, stage));
-  handleResize(null, stage);
-
-  document.addEventListener('keyup', debounce((event) => handleKeyup(event, stage, images)), 200);
+  document.addEventListener('keyup', debounce((event) => handleKeyup(event, stage, images, audio)), 200);
+  btn.addEventListener('click', (event) => {
+    toggleMute(event, audio);
+    event.currentTarget.blur();
+  });
 
   createjs.Ticker.on('tick', () => {
     imgsOnCanvas.forEach(item => {
@@ -80,12 +85,13 @@ async function init() {
     });
     stage.update();
   });
+  handleResize(null, stage);
 }
 
-function handleKeyup(event, stage, images) {
+function handleKeyup(event, stage, images, audio) {
   const pickedImage = images[random(0, images.length - 1)];
   const bmp = new createjs.Bitmap(pickedImage);
-  const scale = random(0.3, 0.8, 1);
+  const scale = random(0.3, 1, 1);
 
   stage.addChild(bmp);
   bmp.regX = pickedImage.width / 2;
@@ -106,7 +112,16 @@ function handleKeyup(event, stage, images) {
       scale: scale * 1.2,
       alpha: 1,
     }, 150)
-    .to({scale: scale}, 200);  
+    .to({scale: scale}, 200);
+  
+  audio.currentTime = 0;
+  audio.play();
+  console.log('imgsOnCanvas :>> ', imgsOnCanvas);
+}
+
+function toggleMute(event, audio) {
+  audio.muted = !audio.muted;
+  event.currentTarget.innerHTML = `サウンド：${audio.muted ? 'OFF' : 'ON'}`; 
 }
 
 // リサイズ処理
@@ -184,8 +199,8 @@ function loop(ctx) {
  * @param {String[]} urlList
  * @return {Promise<HTMLImageElement>} 
  */
-async function allLoadImgPromise(urlList) {
-  return await Promise.all(urlList.map(url => loadImgPromise(url)));
+async function allLoadImgPromise(nameList) {
+  return await Promise.all(nameList.map(name => loadImgPromise(`assets/img/${name}`)));
 }
 
 /**
