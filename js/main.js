@@ -1,11 +1,9 @@
 'use strict';
 
 createjs.Ticker.timingMode = createjs.Ticker.RAF;
+
 const dpr = window.devicePixelRatio;
-const CANVAS_SIZE = {
-  width: 800, //window.innerWidth,
-  height: 600 //window.innerHeight
-}
+const imgsOnCanvas = [];
 const IMG_NAME_LIST = [
   'dog_akitainu.png',
   'dog_doberman.png',
@@ -27,41 +25,6 @@ const IMG_NAME_LIST = [
   'pet_cat_sit.png',
 ];
 
-const imgsOnCanvas = [];
-
-class Animal {
-  constructor(img, x, y, scale, velocity) {
-    this.id = null;
-    this.img = img;
-    this.x = x;
-    this.y = y;
-    this.scale = scale;
-    this.velocity = velocity;
-    this.isOver = false;
-  }
-
-  /**
-   * 
-   * @param {CanvasRenderingContext2D} ctx 
-   */
-  draw(ctx) {
-    ctx.drawImage(this.img, this.x, this.y, this.img.width * this.scale, this.img.height * this.scale);
-  }
-
-  update() {
-    if(this.y < -this.img.height * this.scale) {
-      console.log('上限超えた！');
-      this.isOver = true;
-      return;
-    }
-    this.y -= this.velocity;
-  }
-
-  setId(id) {
-    this.id = id;
-  }
-}
-
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
@@ -70,10 +33,9 @@ async function init() {
   const audio = new Audio('assets/sound/sound.mp3');
   const stage = new createjs.Stage('canvas');
   const btn = document.getElementById('mute');
-  // プリロード
   const images = await allLoadImgPromise(IMG_NAME_LIST);
   window.addEventListener("resize", (event) => handleResize(event, stage));
-  document.addEventListener('keyup', debounce((event) => handleKeyup(event, stage, images, audio)), 200);
+  document.addEventListener('keyup', debounce((event) => handleKeyup(event, stage, images, audio), 200));
   btn.addEventListener('click', (event) => {
     toggleMute(event, audio);
     event.currentTarget.blur();
@@ -97,7 +59,6 @@ function handleKeyup(event, stage, images, audio) {
   bmp.regX = pickedImage.width / 2;
   bmp.regY = pickedImage.height / 2;
   bmp.scale = scale;
-  console.log('pickedImage.width :>> ', pickedImage.width);
   bmp.x = random(
     pickedImage.width * scale / 2,
     (stage.canvas.width / dpr) - (pickedImage.width * scale / 2)
@@ -124,7 +85,6 @@ function toggleMute(event, audio) {
   event.currentTarget.innerHTML = `サウンド：${audio.muted ? 'OFF' : 'ON'}`; 
 }
 
-// リサイズ処理
 function handleResize(event, stage) {
   stage.canvas.width = window.innerWidth * dpr;
   stage.canvas.height = window.innerHeight * dpr;
@@ -133,7 +93,7 @@ function handleResize(event, stage) {
 }
 
 /**
- * 
+ * ランダム値取得
  * @param {Number} min 
  * @param {Number} max 
  * @param {Integer} n
@@ -150,53 +110,9 @@ function random(min, max, decimalPlaces = 0) {
   return result / decimalPlacesNum;
 }
 
-function exe(images, stage) {
-  const pickedImage = images[random(0, images.length - 1)];
-  const scale = random(0.3, 0.8, 1);
-  console.log('scale :>> ', scale);
-  const velocityBase = 3;
-  imgsOnCanvas.push(
-    new Animal(
-      pickedImage, 
-      Math.floor(Math.random() * (CANVAS_SIZE.width - pickedImage.width * scale)),
-      CANVAS_SIZE.height, 
-      scale,
-      velocityBase / (scale)
-    )
-  );
-  // requestAnimationFrame が二重に実行されるのを防止
-  if (imgsOnCanvas.length > 1) {
-    return;
-  }
-  window.requestAnimationFrame(() => {
-    loop(ctx);
-  });
-}
-
-function loop(ctx) {
-  ctx.clearRect(0, 0, CANVAS_SIZE.width, CANVAS_SIZE.height);
-  console.log('imgsOnCanvas :>> ', imgsOnCanvas);
-  imgsOnCanvas.forEach((animal, index) => {
-    if (animal.isOver) {
-      imgsOnCanvas.splice(index, 1);
-      return;
-    }
-    animal.update();
-    animal.draw(ctx);
-  });
-
-  const id = window.requestAnimationFrame(() => {
-    loop(ctx);
-  });
-  
-  if (imgsOnCanvas.length === 0) {
-    cancelAnimationFrame(id);
-  }
-}
-
 /**
  * すべての画像読み込み
- * @param {String[]} urlList
+ * @param {String[]} nameList
  * @return {Promise<HTMLImageElement>} 
  */
 async function allLoadImgPromise(nameList) {
